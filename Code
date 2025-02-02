@@ -1,0 +1,373 @@
+import { useState, useEffect } from 'react';
+
+const Calculator = () => {
+  const [display, setDisplay] = useState('0');
+  const [operation, setOperation] = useState(null);
+  const [previousValue, setPreviousValue] = useState(null);
+  const [newNumber, setNewNumber] = useState(true);
+  const [activeButton, setActiveButton] = useState(null);
+  const [memory, setMemory] = useState(0);
+
+  const handleNumber = (num) => {
+    setActiveButton(num);
+    setTimeout(() => setActiveButton(null), 100);
+    
+    if (newNumber) {
+      setDisplay(num);
+      setNewNumber(false);
+    } else {
+      setDisplay(display === '0' ? num : display + num);
+    }
+  };
+
+  const handleOperator = (op) => {
+    setActiveButton(op);
+    setTimeout(() => setActiveButton(null), 100);
+    
+    setOperation(op);
+    setPreviousValue(parseFloat(display));
+    setNewNumber(true);
+  };
+
+  const handleScientific = (func) => {
+    setActiveButton(func);
+    setTimeout(() => setActiveButton(null), 100);
+    
+    const currentValue = parseFloat(display);
+    let result;
+
+    switch (func) {
+      case 'sqrt':
+        result = Math.sqrt(currentValue);
+        break;
+      case 'square':
+        result = currentValue * currentValue;
+        break;
+      case 'sin':
+        result = Math.sin(currentValue * Math.PI / 180);
+        break;
+      case 'cos':
+        result = Math.cos(currentValue * Math.PI / 180);
+        break;
+      case 'tan':
+        result = Math.tan(currentValue * Math.PI / 180);
+        break;
+      case 'log':
+        result = Math.log10(currentValue);
+        break;
+      case 'ln':
+        result = Math.log(currentValue);
+        break;
+      case '1/x':
+        result = 1 / currentValue;
+        break;
+      case '+/-':
+        result = -currentValue;
+        break;
+      case 'π':
+        result = Math.PI;
+        break;
+      case 'e':
+        result = Math.E;
+        break;
+      default:
+        return;
+    }
+    
+    setDisplay(result.toString());
+    setNewNumber(true);
+  };
+
+  const handleMemory = (action) => {
+    setActiveButton(action);
+    setTimeout(() => setActiveButton(null), 100);
+    
+    const currentValue = parseFloat(display);
+    switch (action) {
+      case 'MC':
+        setMemory(0);
+        break;
+      case 'MR':
+        setDisplay(memory.toString());
+        setNewNumber(true);
+        break;
+      case 'M+':
+        setMemory(memory + currentValue);
+        break;
+      case 'M-':
+        setMemory(memory - currentValue);
+        break;
+    }
+  };
+
+  const calculate = () => {
+    setActiveButton('=');
+    setTimeout(() => setActiveButton(null), 100);
+    
+    if (operation === null || previousValue === null) return;
+    
+    const current = parseFloat(display);
+    let result = 0;
+    
+    switch (operation) {
+      case '+':
+        result = previousValue + current;
+        break;
+      case '-':
+        result = previousValue - current;
+        break;
+      case '×':
+        result = previousValue * current;
+        break;
+      case '÷':
+        result = previousValue / current;
+        break;
+      case 'xʸ':
+        result = Math.pow(previousValue, current);
+        break;
+      case '%':
+        result = (previousValue * current) / 100;
+        break;
+      default:
+        return;
+    }
+    
+    setDisplay(result.toString());
+    setOperation(null);
+    setPreviousValue(null);
+    setNewNumber(true);
+  };
+
+  const clear = () => {
+    setActiveButton('AC');
+    setTimeout(() => setActiveButton(null), 100);
+    
+    setDisplay('0');
+    setOperation(null);
+    setPreviousValue(null);
+    setNewNumber(true);
+  };
+
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (/[\d+\-*/.=Enter]/.test(event.key)) {
+        event.preventDefault();
+      }
+
+      if (/^\d$/.test(event.key)) {
+        handleNumber(event.key);
+      }
+      else if (event.key === '.') {
+        handleNumber('.');
+      }
+      else if (event.key === '+') {
+        handleOperator('+');
+      }
+      else if (event.key === '-') {
+        handleOperator('-');
+      }
+      else if (event.key === '*') {
+        handleOperator('×');
+      }
+      else if (event.key === '/') {
+        handleOperator('÷');
+      }
+      else if (event.key === 'Enter' || event.key === '=') {
+        calculate();
+      }
+      else if (event.key === 'Escape') {
+        clear();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [display, operation, previousValue]);
+
+  const getButtonClass = (value, type = 'number') => {
+    const baseClass = 'transform transition-all duration-100 p-4 rounded shadow-md';
+    const activeClass = activeButton === value ? 'scale-95 brightness-90' : '';
+    
+    let typeClass = '';
+    switch (type) {
+      case 'number':
+        typeClass = 'bg-pink-200 text-pink-900 hover:bg-pink-300 active:bg-pink-400';
+        break;
+      case 'operator':
+        typeClass = 'bg-pink-300 text-pink-900 hover:bg-pink-400 active:bg-pink-500';
+        break;
+      case 'function':
+        typeClass = 'bg-pink-400 text-white hover:bg-pink-500 active:bg-pink-600';
+        break;
+      case 'memory':
+        typeClass = 'bg-pink-100 text-pink-900 hover:bg-pink-200 active:bg-pink-300';
+        break;
+    }
+    
+    return `${baseClass} ${typeClass} ${activeClass}`;
+  };
+
+  return (
+    <div className="w-full max-w-6xl bg-pink-100 p-4 rounded-lg shadow-xl">
+      <div className="bg-pink-50 p-4 rounded-lg mb-4 shadow-inner">
+        <div className="text-right text-pink-900 text-3xl font-mono">
+          {display}
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-8 gap-2 mb-2">
+        {['MC', 'MR', 'M+', 'M-'].map((btn) => (
+          <button
+            key={btn}
+            onClick={() => handleMemory(btn)}
+            className={getButtonClass(btn, 'memory')}
+          >
+            {btn}
+          </button>
+        ))}
+        <button
+          onClick={() => handleScientific('π')}
+          className={getButtonClass('π', 'function')}
+        >
+          π
+        </button>
+        <button
+          onClick={() => handleScientific('e')}
+          className={getButtonClass('e', 'function')}
+        >
+          e
+        </button>
+        <button
+          onClick={clear}
+          className={getButtonClass('AC', 'function')}
+        >
+          AC
+        </button>
+        <button
+          onClick={() => handleScientific('+/-')}
+          className={getButtonClass('+/-', 'function')}
+        >
+          ±
+        </button>
+      </div>
+
+      <div className="grid grid-cols-8 gap-2">
+        <div className="col-span-5 grid grid-cols-5 gap-2">
+          <button
+            onClick={() => handleScientific('square')}
+            className={getButtonClass('square', 'function')}
+          >
+            x²
+          </button>
+          <button
+            onClick={() => handleScientific('sqrt')}
+            className={getButtonClass('sqrt', 'function')}
+          >
+            √
+          </button>
+          <button
+            onClick={() => handleOperator('xʸ')}
+            className={getButtonClass('xʸ', 'operator')}
+          >
+            xʸ
+          </button>
+          <button
+            onClick={() => handleScientific('1/x')}
+            className={getButtonClass('1/x', 'function')}
+          >
+            1/x
+          </button>
+          <button
+            onClick={() => handleOperator('%')}
+            className={getButtonClass('%', 'operator')}
+          >
+            %
+          </button>
+          
+          {[7, 8, 9, 4, 5, 6, 1, 2, 3].map((num) => (
+            <button
+              key={num}
+              onClick={() => handleNumber(num.toString())}
+              className={getButtonClass(num.toString())}
+            >
+              {num}
+            </button>
+          ))}
+          
+          <button
+            onClick={() => handleNumber('0')}
+            className={`${getButtonClass('0')} col-span-2`}
+          >
+            0
+          </button>
+          <button
+            onClick={() => handleNumber('.')}
+            className={getButtonClass('.')}
+          >
+            .
+          </button>
+          <button
+            onClick={calculate}
+            className={getButtonClass('=', 'operator')}
+          >
+            =
+          </button>
+        </div>
+
+        <div className="col-span-3 grid grid-cols-3 gap-2">
+          {['sin', 'cos', 'tan'].map((func) => (
+            <button
+              key={func}
+              onClick={() => handleScientific(func)}
+              className={getButtonClass(func, 'function')}
+            >
+              {func}
+            </button>
+          ))}
+          
+          {['log', 'ln'].map((func) => (
+            <button
+              key={func}
+              onClick={() => handleScientific(func)}
+              className={getButtonClass(func, 'function')}
+            >
+              {func}
+            </button>
+          ))}
+          
+          <button
+            onClick={() => handleOperator('÷')}
+            className={getButtonClass('÷', 'operator')}
+          >
+            ÷
+          </button>
+          
+          <button
+            onClick={() => handleOperator('×')}
+            className={getButtonClass('×', 'operator')}
+          >
+            ×
+          </button>
+          
+          <button
+            onClick={() => handleOperator('-')}
+            className={getButtonClass('-', 'operator')}
+          >
+            -
+          </button>
+          
+          <button
+            onClick={() => handleOperator('+')}
+            className={getButtonClass('+', 'operator')}
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Calculator;
